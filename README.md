@@ -1,6 +1,6 @@
 # 🌐 Secure Bootloader for IoT Devices with OTA (Over-The-Air) Firmware Update & AES-256 Encryption  
 
-> 👨‍💻 **Author:** AI-Augmented Engineer – *leveraging AI tools to design, implement, and secure embedded systems.*
+> 👨‍💻 **Author:** AI-Augmented Firmware Engineer – *leveraging AI tools to design, implement, and secure embedded systems.*
 
 ---
 
