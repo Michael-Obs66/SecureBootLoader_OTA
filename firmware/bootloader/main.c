@@ -13,20 +13,32 @@ int main(void) {
         platform_enter_safe_mode();
     }
 
-    uint32_t active_slot = platform_read_active_slot_pointer();
+    uint32_t active_slot_addr = platform_read_active_slot_address();
 
-    if (!boot_verify_slot(active_slot)) {
+    // 1) Verify metadata first (version & signature) without modifying any slot
+    if (!boot_verify_slot(active_slot_addr)) {
         log_info("[BOOT] Active firmware invalid, performing OTA...\n");
         if (!ota_perform_update()) {
             log_error("[BOOT] OTA failed, entering safe mode\n");
             platform_enter_safe_mode();
         }
+        // After OTA, re-read active slot address if OTA may change it
+        active_slot_addr = platform_read_active_slot_address();
+        if (!boot_verify_slot(active_slot_addr)) {
+            log_error("[BOOT] Verified OTA image still invalid\n");
+            platform_enter_safe_mode();
+        }
     }
 
-    platform_mark_last_boot_success(active_slot);
-    log_info("[BOOT] Jumping to firmware at 0x%08X\n", active_slot);
-    platform_deinit_for_jump();
-    platform_jump_to_address(active_slot);
+    // 2) set boot_attempted flag BEFORE jump
+    platform_set_boot_attempted_flag(active_slot_addr);
 
-    platform_enter_safe_mode(); // Should never reach here
+    // 3) prepare CPU & jump
+    platform_deinit_for_jump();
+    platform_jump_to_address(active_slot_addr);
+
+    // If returns -> either firmware crashed immediately, or jump failed
+    log_error("[BOOT] Jump failed or firmware crashed. Clearing boot_attempted and entering safe mode\n");
+    platform_clear_boot_attempted_flag();
+    platform_enter_safe_mode();
 }
